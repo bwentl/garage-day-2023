@@ -23,7 +23,7 @@ eb = testAgent.load_hf_embedding()
 
 # define model used
 # supported models: ["gpt-35-turbo", "llama-7b", "llama-13b", "llama-30b", "llama-65b"]
-model_name = "llama-7b"
+model_name = "gpt-35-turbo"
 
 if model_name == "gpt-35-turbo":
     # https://python.langchain.com/en/latest/modules/models/llms/integrations/azure_openai_example.html

@@ -1,5 +1,7 @@
 import sys
 import gradio as gr
+import random
+import time
 import hashlib
 from datetime import datetime
 
@@ -39,45 +41,71 @@ class WebUI:
         # - https://gradio.app/docs/#highlightedtext
 
         with gr.Blocks(theme="sudeepshouche/minimalist") as demo:
-            gr.Markdown("# A conversation with a generative agent")
+            gr.Markdown("# TextTransit Instant Messenging System")
             thought_out = None
             # with gr.Tab("Demo"):
             with gr.Row():
                 with gr.Column(scale=1, min_width=600):
-                    text_input = gr.Textbox(
-                        label="Query",
-                        info="Ask a question or give an instruction",
-                        placeholder="Enter here",
-                        lines=3,
-                        # value="",
-                        examples=[
-                            ["What a beautiful morning for a walk!"],
-                            ["It was the best of times, it was the worst of times."],
-                        ],
-                    )
-                    # thought_out = gr.Textbox(lines=10, label="Thoughts",
-                    #     scroll_to_output=True,)
-                    # thought_out = gr.HighlightedText(
-                    #     label="Thought Process",
-                    #     combine_adjacent=False,
-                    #     show_legend=False,
-                    #     scroll_to_output=True,
-                    # ).style(color_map={"+": "red", "-": "green"})
-                    text_output = gr.Textbox(lines=5, label="Final Answer")
-                    text_button = gr.Button("Run")
+                    with gr.Tab("Customers"):
+                        text_input = gr.Textbox(
+                            label="Customer Feedback",
+                            info="Your thoughts are important to us, please tell us about your transit experience.",
+                            placeholder="Enter here",
+                            lines=3,
+                            value="Buses constantly late, missed important meetings.",
+                        )
+                        text_button = gr.Button("Submit Feedback")
+                        text_output = gr.Textbox(lines=5, label="Automated response")
 
-                with gr.Column(scale=1, min_width=600):
-                    thought_out = gr.HTML(
-                        label="Thought Process", scroll_to_output=True
-                    )
-                    text_input.change(
-                        self.get_thought_process_log,
-                        inputs=[],
-                        outputs=thought_out,
-                        queue=True,
-                        every=1,
-                    )
+                    with gr.Tab("Customer Agent"):
+                        server_status = gr.Radio(
+                            ["online", "offline"],
+                            label="Status",
+                            value="offline",
+                            interactive=True,
+                            info="Set offline to delegate automated response to Bot.",
+                        )
+                        chatbot = gr.Chatbot()
+                        msg = gr.Textbox()
+                        revise_chat = gr.Button("Request Revision")
+                        revise_chat = gr.Button("Send to Customer")
+                        # clear = gr.Button("Clear")
+
+                        def respond(message, chat_history):
+                            bot_message = random.choice(
+                                [
+                                    "How are you?",
+                                    "I am well, thank you for asking",
+                                    "It's a great day.",
+                                ]
+                            )
+                            chat_history.append((message, bot_message))
+                            time.sleep(1)
+                            return "", chat_history
+
+                        msg.submit(respond, [msg, chatbot], [msg, chatbot])
+                        revise_chat.click(respond, [msg, chatbot], [msg, chatbot])
+                        # server_status.change(filter, server_status, [rowA, rowB, rowC])
+                        # clear.click(lambda: None, None, chatbot, queue=False)
+
+                    with gr.Tab("Virtual Assistant"):
+                        with gr.Column(scale=1, min_width=600):
+                            thought_out = gr.HTML(
+                                label="Thought Process", scroll_to_output=True
+                            )
+                            text_input.change(
+                                self.get_thought_process_log,
+                                inputs=[],
+                                outputs=thought_out,
+                                queue=True,
+                                every=1,
+                            )
+
+                    with gr.Tab("Administrator"):
+                        shutdown_server = gr.Button("Shutdown Server")
+
             text_button.click(func, inputs=text_input, outputs=text_output)
+            shutdown_server.click(demo.close)
         return demo
 
     def get_thought_process_log(self):
