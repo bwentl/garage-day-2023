@@ -25,7 +25,7 @@ import sys
 
 sys.path.append("./")
 
-from src.GPTQ_loader import load_quantized
+# from src.GPTQ_loader import load_quantized
 
 
 class LlamaModelHandler:
@@ -119,7 +119,8 @@ class LlamaModelHandler:
             "pre_layer": 0,  # number of layers to gpu, enables cpu offloading
         }
         # load model
-        cls.model = load_quantized(model_name, **kwargs_quant)
+        # cls.model = load_quantized(model_name, **kwargs_quant)
+        raise NotImplementedError("cpu version of the repo does not allow use of this model")
         # torch.device("cuda:0")
         return cls.model
 
