@@ -25,7 +25,7 @@ from langchain.vectorstores.pgvector import EmbeddingStore, PGVector
 from langchain.embeddings.base import Embeddings
 
 sys.path.append("./")
-from src.models import LlamaModelHandler
+# from src.models import LlamaModelHandler
 from src.prompts.memory import IMPORTANCE_RATING_PROMPT
 from langchain.text_splitter import TextSplitter
 
@@ -299,49 +299,49 @@ if __name__ == "__main__":
     # lora_name = "alpaca-gpt4-lora-13b-3ep"
     model_name = "llama-7b"
     lora_name = "alpaca-lora-7b"
-    testAgent = LlamaModelHandler()
-    eb = testAgent.get_hf_embedding()
+    # testAgent = LlamaModelHandler()
+    # eb = testAgent.get_hf_embedding()
 
-    pipeline, model, tokenizer = testAgent.load_llama_llm(
-        model_name=model_name, lora_name=lora_name, max_new_tokens=200
-    )
-
-    memory_store_setter = PGMemoryStoreSetter(embedding=eb)
-    memory_store_retriever = PGMemoryStoreRetriever(embedding=eb)
-
-    # updates the access time
-    # memory_store.update_memory("fd91b4902786c06621a2a3e03dd3ad1e")
-
-    # Add a memory. If with_importance is True, llm call to generate importance
-    memory_store_setter.add_memory(
-        "I am reflecting on my life. I remember this",
-        llm=pipeline,
-        with_importance=True,
-        type="memory",
-        retrieval_eligible="True",
-    )
-
-    # Retrieve list of memory objects prioritized by relevance*importance*recency
-    # memory_list = memory_store.retrieve_memory_list(
-    #     query="penguins",
-    #     mem_to_search=100,
-    #     mem_to_return=5,
-    #     relevance_wt=1,
-    #     importance_wt=1,
-    #     recency_wt=1,
+    # pipeline, model, tokenizer = testAgent.load_llama_llm(
+    #     model_name=model_name, lora_name=lora_name, max_new_tokens=200
     # )
-    memory_kwargs = {
-        "mem_to_search": 30,
-        "mem_to_return": 1,
-        "recency_wt": 1,
-        "importance_wt": 0,
-        "relevance_wt": 0,
-        "mem_type": "identity",
-    }
-    memory_list = memory_store_retriever.get_relevant_documents(
-        "",
-        **memory_kwargs,
-    )
-    print(memory_list)
 
-    print("done")
+    # memory_store_setter = PGMemoryStoreSetter(embedding=eb)
+    # memory_store_retriever = PGMemoryStoreRetriever(embedding=eb)
+
+    # # updates the access time
+    # # memory_store.update_memory("fd91b4902786c06621a2a3e03dd3ad1e")
+
+    # # Add a memory. If with_importance is True, llm call to generate importance
+    # memory_store_setter.add_memory(
+    #     "I am reflecting on my life. I remember this",
+    #     llm=pipeline,
+    #     with_importance=True,
+    #     type="memory",
+    #     retrieval_eligible="True",
+    # )
+
+    # # Retrieve list of memory objects prioritized by relevance*importance*recency
+    # # memory_list = memory_store.retrieve_memory_list(
+    # #     query="penguins",
+    # #     mem_to_search=100,
+    # #     mem_to_return=5,
+    # #     relevance_wt=1,
+    # #     importance_wt=1,
+    # #     recency_wt=1,
+    # # )
+    # memory_kwargs = {
+    #     "mem_to_search": 30,
+    #     "mem_to_return": 1,
+    #     "recency_wt": 1,
+    #     "importance_wt": 0,
+    #     "relevance_wt": 0,
+    #     "mem_type": "identity",
+    # }
+    # memory_list = memory_store_retriever.get_relevant_documents(
+    #     "",
+    #     **memory_kwargs,
+    # )
+    # print(memory_list)
+
+    # print("done")

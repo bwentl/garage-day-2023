@@ -12,12 +12,12 @@ from langchain.agents import (
 )
 
 sys.path.append("./")
-from src.gradio_ui import WebUI
-from src.models import LlamaModelHandler
+# from src.gradio_ui import WebUI
+# from src.models import LlamaModelHandler
 from src.agent_tool_selection import AgentToolSelection
-from src.docs import DocumentHandler
+# from src.docs import DocumentHandler
 from src.tools import ToolHandler
-from src.memory_store import PGMemoryStoreSetter, PGMemoryStoreRetriever
+# from src.memory_store import PGMemoryStoreSetter, PGMemoryStoreRetriever
 from src.util import get_secrets, get_word_match_list, agent_logs
 from src.prompts.tool_select import TOOL_SELECTION_PROMPT
 from src.prompts.multi_step import (
@@ -49,7 +49,7 @@ class AgentMultiStepCritic:
     def __init__(
         self,
         pipeline,
-        embedding,
+        # embedding,
         tool_names,
         doc_info=dict(),
         run_tool_selector=False,
@@ -60,7 +60,7 @@ class AgentMultiStepCritic:
     ):
         self.kwarg = kwarg
         self.pipeline = pipeline
-        self.embedding = embedding
+        # self.embedding = embedding
         self.new_session = kwarg["new_session"] if "new_session" in kwarg else False
         self.generate_search_term = (
             kwarg["generate_search_term"] if "generate_search_term" in kwarg else True
@@ -88,24 +88,24 @@ class AgentMultiStepCritic:
         # build tools
         tools_wrapper = ToolHandler()
         tools = tools_wrapper.get_tools(tool_names, pipeline)
-        # add document retrievers to tools
-        if len(doc_info) > 0:
-            newDocs = DocumentHandler(
-                embedding=embedding, redis_host=get_secrets("redis_host")
-            )
-            doc_tools = newDocs.get_tool_from_doc(
-                pipeline=pipeline,
-                doc_info=doc_info,
-                doc_use_type=doc_use_type,
-                doc_top_k_results=doc_top_k_results,
-            )
-            tools = tools + doc_tools
-        # initialize memory bank
-        if self.update_long_term_memory or self.use_long_term_memory:
-            self.memory_setter = self._init_long_term_memory_setter(embedding)
-            memory_tool = self._init_long_term_memory_retriver(embedding)
-            if self.use_long_term_memory:
-                tools.append(memory_tool)
+        # # add document retrievers to tools
+        # if len(doc_info) > 0:
+        #     newDocs = DocumentHandler(
+        #         embedding=embedding, redis_host=get_secrets("redis_host")
+        #     )
+        #     doc_tools = newDocs.get_tool_from_doc(
+        #         pipeline=pipeline,
+        #         doc_info=doc_info,
+        #         doc_use_type=doc_use_type,
+        #         doc_top_k_results=doc_top_k_results,
+        #     )
+        #     tools = tools + doc_tools
+        # # initialize memory bank
+        # if self.update_long_term_memory or self.use_long_term_memory:
+        #     self.memory_setter = self._init_long_term_memory_setter(embedding)
+        #     memory_tool = self._init_long_term_memory_retriver(embedding)
+        #     if self.use_long_term_memory:
+        #         tools.append(memory_tool)
         # make tools avilable to instance
         self.tools = tools
 
@@ -276,20 +276,20 @@ class AgentMultiStepCritic:
 
         return final_answer
 
-    def _init_long_term_memory_retriver(self, embedding):
-        memory_bank = PGMemoryStoreRetriever(
-            embedding, self.long_term_memory_collection
-        )
-        memory_tool = Tool(
-            name="Memory",
-            func=memory_bank.retrieve_memory_list,
-            description="knowledge bank based on previous conversations",
-        )
-        return memory_tool
+    # def _init_long_term_memory_retriver(self, embedding):
+    #     memory_bank = PGMemoryStoreRetriever(
+    #         embedding, self.long_term_memory_collection
+    #     )
+    #     memory_tool = Tool(
+    #         name="Memory",
+    #         func=memory_bank.retrieve_memory_list,
+    #         description="knowledge bank based on previous conversations",
+    #     )
+    #     return memory_tool
 
-    def _init_long_term_memory_setter(self, embedding):
-        memory_bank = PGMemoryStoreSetter(embedding, self.long_term_memory_collection)
-        return memory_bank
+    # def _init_long_term_memory_setter(self, embedding):
+    #     memory_bank = PGMemoryStoreSetter(embedding, self.long_term_memory_collection)
+    #     return memory_bank
 
 
 if __name__ == "__main__":
@@ -299,48 +299,48 @@ if __name__ == "__main__":
     model_name = "llama-7b"
     lora_name = "alpaca-lora-7b"
 
-    testAgent = LlamaModelHandler()
-    eb = testAgent.get_hf_embedding()
-    pipeline, model, tokenizer = testAgent.load_llama_llm(
-        model_name=model_name, lora_name=lora_name, max_new_tokens=200
-    )
+    # testAgent = LlamaModelHandler()
+    # eb = testAgent.get_hf_embedding()
+    # pipeline, model, tokenizer = testAgent.load_llama_llm(
+    #     model_name=model_name, lora_name=lora_name, max_new_tokens=200
+    # )
 
-    # define tool list (excluding any documents)
-    test_tool_list = ["wiki", "searx"]
+    # # define tool list (excluding any documents)
+    # test_tool_list = ["wiki", "searx"]
 
-    # define test documents
-    test_doc_info = {
-        "examples": {
-            "tool_name": "State of Union Document",
-            "description": "President Joe Biden's 2023 state of the union address.",
-            "files": ["index-docs/examples/state_of_the_union.txt"],
-        }
-    }
+    # # define test documents
+    # test_doc_info = {
+    #     "examples": {
+    #         "tool_name": "State of Union Document",
+    #         "description": "President Joe Biden's 2023 state of the union address.",
+    #         "files": ["index-docs/examples/state_of_the_union.txt"],
+    #     }
+    # }
 
-    # initiate agent executor
-    kwarg = {
-        "new_session": True,
-        "use_cache_from_log": False,
-        "log_tool_selector": False,
-        "doc_use_type": "aggregate",
-    }
-    multi_step_agent = AgentMultiStepCritic(
-        pipeline=pipeline,
-        embedding=eb,
-        tool_names=test_tool_list,
-        doc_info=test_doc_info,
-        verbose=True,
-        **kwarg,
-    )
+    # # initiate agent executor
+    # kwarg = {
+    #     "new_session": True,
+    #     "use_cache_from_log": False,
+    #     "log_tool_selector": False,
+    #     "doc_use_type": "aggregate",
+    # }
+    # multi_step_agent = AgentMultiStepCritic(
+    #     pipeline=pipeline,
+    #     embedding=eb,
+    #     tool_names=test_tool_list,
+    #     doc_info=test_doc_info,
+    #     verbose=True,
+    #     **kwarg,
+    # )
 
-    # testing start
-    # print("testing for agent executor starts...")
-    # test_prompt = "What did the president say about Ketanji Brown Jackson in his address to the nation?"
-    # multi_step_agent.run(test_prompt)
+    # # testing start
+    # # print("testing for agent executor starts...")
+    # # test_prompt = "What did the president say about Ketanji Brown Jackson in his address to the nation?"
+    # # multi_step_agent.run(test_prompt)
 
-    # test with web ui
-    ui_run = WebUI(multi_step_agent.run)
-    ui_run.launch(server_name="0.0.0.0", server_port=7860)
+    # # test with web ui
+    # ui_run = WebUI(multi_step_agent.run)
+    # ui_run.launch(server_name="0.0.0.0", server_port=7860)
 
-    # finish
-    print("testing complete")
+    # # finish
+    # print("testing complete")
