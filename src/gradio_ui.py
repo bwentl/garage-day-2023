@@ -5,8 +5,17 @@ import time
 import hashlib
 from datetime import datetime
 
+from langchain.chat_models import AzureChatOpenAI
+
+
 sys.path.append("./")
-from src.util import agent_logs, get_epoch_time
+from src.chain_sequence import ChainSequence
+from src.prompts.customer_triage import (
+    TRIAGE_PROCESS_A1,
+    TRIAGE_PROCESS_A2,
+    TRIAGE_PROCESS_A3,
+)
+from src.util import agent_logs, get_epoch_time, get_secrets
 
 
 class WebUI:
@@ -29,6 +38,50 @@ class WebUI:
         # last message sent
         self.last_customer_query_msg = ""
         self.last_agent_response_msg = ""
+        # initialize llm model
+        self.pipeline = AzureChatOpenAI(
+            openai_api_base=get_secrets("azure_openapi_url"),
+            deployment_name=get_secrets("azure_openai_deployment"),
+            openai_api_key=get_secrets("azure_openapi"),
+            openai_api_type="azure",
+            openai_api_version="2023-03-15-preview",
+            model_name="gpt-35-turbo",
+            temperature=0.1,
+            max_tokens=200,
+        )
+        args = {
+            "use_cache_from_log": True,
+        }
+        chain_helper_categorize_config = [
+            {
+                "name": "task1",
+                "type": "simple",
+                "input_template": TRIAGE_PROCESS_A1,
+            }
+        ]
+        chain_helper_urgency_config = [
+            {
+                "name": "task2",
+                "type": "simple",
+                "input_template": TRIAGE_PROCESS_A2,
+            }
+        ]
+        chain_helper_answer_config = [
+            {
+                "name": "task3",
+                "type": "simple",
+                "input_template": TRIAGE_PROCESS_A3,
+            }
+        ]
+        self.translink_helper_categorize_chains = ChainSequence(
+            config=chain_helper_categorize_config, pipeline=self.pipeline, **args
+        )
+        self.translink_helper_urgency_chains = ChainSequence(
+            config=chain_helper_urgency_config, pipeline=self.pipeline, **args
+        )
+        self.translink_helper_answer_chains = ChainSequence(
+            config=chain_helper_answer_config, pipeline=self.pipeline, **args
+        )
 
     @staticmethod
     def _clear_log_before_func(func):
@@ -40,23 +93,20 @@ class WebUI:
         return inner1
 
     def generate_response(self, input_text):
-        bot_message = random.choice(
-            [
-                "How are you?",
-                "I am well, thank you for asking",
-                "It's a great day.",
-            ]
-        )
-
-        return bot_message
+        annotated_text_1 = self.translink_helper_categorize_chains.run(input_text)
+        annotated_text_2 = self.translink_helper_urgency_chains.run(input_text)
+        annotated_text_3 = self.translink_helper_answer_chains.run(input_text)
+        final_text = f"""Customer message: {input_text}\nCategory: {annotated_text_1}.\nPriority: {annotated_text_2}.\nSuggested Response: {annotated_text_3}"""
+        return final_text
 
     def respond(self, message, chat_history):
         self.customer_chat_history = chat_history
         self.last_customer_query_msg = message
-        self.agent_chat_history.append(
-            (self.last_agent_response_msg, self.last_customer_query_msg)
-        )
         # insert chatbot interruption
+        annotated_message = self.generate_response(message)
+        self.agent_chat_history.append(
+            (self.last_agent_response_msg, annotated_message)
+        )
         return "", self.agent_chat_history
 
     def agent_respond(self, message, chat_history):
