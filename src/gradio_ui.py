@@ -87,7 +87,7 @@ class WebUI:
         # testAgent = LlamaModelHandler()
         # eb = testAgent.get_hf_embedding()
         # define tool list (excluding any documents)
-        test_tool_list = ["wiki", "searx"]
+        test_tool_list = ["wiki", "google"]
         # initiate agent executor
         answer_kwarg = {
             "new_session": False,

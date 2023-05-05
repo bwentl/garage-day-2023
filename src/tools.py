@@ -92,7 +92,7 @@ class ToolHandler:
         os.environ["GOOGLE_API_KEY"] = get_secrets("google2api")
         os.environ["GOOGLE_CSE_ID"] = get_secrets("google2cse")
         google_tool = Tool(
-            name="Google",
+            name="Search",
             func=GoogleSearchAPIWrapper(k=3).run,
             description="recent events and specific facts about a topic.",
         )
@@ -103,7 +103,7 @@ class ToolHandler:
         os.environ["SERPAPI_API_KEY"] = get_secrets("serpapi")
         self.serp_search = SerpAPIWrapper()
         serp_tool = Tool(
-            name="Google",
+            name="Search",
             func=self.serp_search.run,
             description="recent events and specific facts about a topic.",
         )
