@@ -13,15 +13,22 @@ class WebUI:
     """a simple and awesome ui to display agent actions and thought processes"""
 
     gradio_app = None
+    shared_chat_history = None
 
-    def __init__(self, func, ui_type="agent_executor_mrkl"):
+    def __init__(self, func, ui_type="garage_day_idea"):
         # clear old logs
         agent_logs.clear_log()
         # initialize app layouts
-        if ui_type == "agent_executor_mrkl":
-            self.gradio_app = self._init_agent_executor_mrkl(
+        if ui_type == "garage_day_idea":
+            self.gradio_app = self._init_garage_day_idea(
                 self._clear_log_before_func(func)
             )
+        # initialize chat history
+        self.customer_chat_history = []
+        self.agent_chat_history = []
+        # last message sent
+        self.last_customer_query_msg = ""
+        self.last_agent_response_msg = ""
 
     @staticmethod
     def _clear_log_before_func(func):
@@ -32,7 +39,40 @@ class WebUI:
 
         return inner1
 
-    def _init_agent_executor_mrkl(self, func):
+    def generate_response(self, input_text):
+        bot_message = random.choice(
+            [
+                "How are you?",
+                "I am well, thank you for asking",
+                "It's a great day.",
+            ]
+        )
+
+        return bot_message
+
+    def respond(self, message, chat_history):
+        self.customer_chat_history = chat_history
+        self.last_customer_query_msg = message
+        self.agent_chat_history.append(
+            (self.last_agent_response_msg, self.last_customer_query_msg)
+        )
+        # insert chatbot interruption
+        return "", self.agent_chat_history
+
+    def agent_respond(self, message, chat_history):
+        self.agent_chat_history = chat_history
+        self.last_agent_response_msg = message
+        self.customer_chat_history.append(
+            (self.last_customer_query_msg, self.last_agent_response_msg)
+        )
+        # # revise agent chat
+        # self.agent_chat_history = self.agent_chat_history[:-1]
+        # self.agent_chat_history.append(
+        #     (self.last_agent_response_msg, self.last_customer_query_msg)
+        # )
+        return "", self.customer_chat_history
+
+    def _init_garage_day_idea(self, func):
         # resource:
         # - https://gradio.app/theming-guide/#discovering-themes
         # - https://gradio.app/quickstart/#more-complexity
@@ -46,45 +86,44 @@ class WebUI:
             # with gr.Tab("Demo"):
             with gr.Row():
                 with gr.Column(scale=1, min_width=600):
-                    with gr.Tab("Customers"):
-                        text_input = gr.Textbox(
+                    with gr.Tab("Customer"):
+                        customer_chat = gr.Chatbot(
                             label="Customer Feedback",
-                            info="Your thoughts are important to us, please tell us about your transit experience.",
-                            placeholder="Enter here",
-                            lines=3,
-                            value="Buses constantly late, missed important meetings.",
+                            interactive=True,
+                            lines=6,
+                            # value="Buses constantly late, missed important meetings.",
                         )
-                        text_button = gr.Button("Submit Feedback")
-                        text_output = gr.Textbox(lines=5, label="Automated response")
+                        customer_msg = gr.Textbox()
+                        customer_send = gr.Button("Send to TransLink")
+                        clear = gr.Button("Clear")
+                        # text_input = gr.Textbox(
+                        #     info="Your thoughts are important to us, please tell us about your transit experience.",
+                        #     placeholder="Enter here",
+                        #     lines=3,
+                        #     value="Buses constantly late, missed important meetings.",
+                        # )
+                        # text_button.click(func, inputs=text_input, outputs=text_output)
+                        # text_button = gr.Button("Send Feedback")
+                        # text_output = gr.Textbox(lines=5, label="Automated response")
 
-                    with gr.Tab("Customer Agent"):
+                    with gr.Tab("TransLink Staff"):
                         server_status = gr.Radio(
                             ["online", "offline"],
                             label="Status",
-                            value="offline",
+                            value="online",
                             interactive=True,
                             info="Set offline to delegate automated response to Bot.",
                         )
-                        chatbot = gr.Chatbot()
-                        msg = gr.Textbox()
-                        revise_chat = gr.Button("Request Revision")
-                        revise_chat = gr.Button("Send to Customer")
+                        agent_chat = gr.Chatbot(
+                            label="Current Chat with Customer",
+                            interactive=True,
+                            lines=6,
+                        )
+                        agent_msg = gr.Textbox()
+                        # revise_chat = gr.Button("Request Revision")
+                        agent_send = gr.Button("Send to Customer")
                         # clear = gr.Button("Clear")
-
-                        def respond(message, chat_history):
-                            bot_message = random.choice(
-                                [
-                                    "How are you?",
-                                    "I am well, thank you for asking",
-                                    "It's a great day.",
-                                ]
-                            )
-                            chat_history.append((message, bot_message))
-                            time.sleep(1)
-                            return "", chat_history
-
-                        msg.submit(respond, [msg, chatbot], [msg, chatbot])
-                        revise_chat.click(respond, [msg, chatbot], [msg, chatbot])
+                        # revise_chat.click(respond, [msg, chatbot], [msg, chatbot])
                         # server_status.change(filter, server_status, [rowA, rowB, rowC])
                         # clear.click(lambda: None, None, chatbot, queue=False)
 
@@ -93,7 +132,7 @@ class WebUI:
                             thought_out = gr.HTML(
                                 label="Thought Process", scroll_to_output=True
                             )
-                            text_input.change(
+                            customer_chat.change(
                                 self.get_thought_process_log,
                                 inputs=[],
                                 outputs=thought_out,
@@ -101,11 +140,27 @@ class WebUI:
                                 every=1,
                             )
 
-                    with gr.Tab("Administrator"):
-                        shutdown_server = gr.Button("Shutdown Server")
+            #         with gr.Tab("Administrator"):
+            #             shutdown_server = gr.Button("Shutdown Server")
+            # shutdown_server.click(demo.close)
 
-            text_button.click(func, inputs=text_input, outputs=text_output)
-            shutdown_server.click(demo.close)
+            customer_msg.submit(
+                self.respond, [customer_msg, customer_chat], [agent_msg, agent_chat]
+            )
+            customer_send.click(
+                self.respond, [customer_msg, customer_chat], [agent_msg, agent_chat]
+            )
+            agent_msg.submit(
+                self.agent_respond,
+                [agent_msg, agent_chat],
+                [customer_msg, customer_chat],
+            )
+            agent_send.click(
+                self.agent_respond,
+                [agent_msg, agent_chat],
+                [customer_msg, customer_chat],
+            )
+            clear.click(lambda: None, None, customer_chat, queue=False)
         return demo
 
     def get_thought_process_log(self):
