@@ -33,8 +33,8 @@ You need to categorize the following question:
 Pick one category only
 
 ### Input:
-- urgent: time sensitive and require immediate response
-- information: not time sensitive and is a general inquiry
+- Urgent: time sensitive and require immediate response
+- Informational: not time sensitive and is a general inquiry
 
 ### Response:
 The category would fall under: """
