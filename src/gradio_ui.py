@@ -9,7 +9,9 @@ from langchain.chat_models import AzureChatOpenAI
 
 
 sys.path.append("./")
+# from src.models import LlamaModelHandler
 from src.chain_sequence import ChainSequence
+from src.agent_multi_step_critic import AgentMultiStepCritic
 from src.prompts.customer_triage import (
     TRIAGE_PROCESS_A1,
     TRIAGE_PROCESS_A2,
@@ -49,13 +51,19 @@ class WebUI:
             temperature=0.1,
             max_tokens=200,
         )
-        args = {
+        categorize_args = {
+            "new_session": True,
+            "use_cache_from_log": True,
+        }
+        urgency_args = {
+            "new_session": False,
             "use_cache_from_log": True,
         }
         chain_helper_categorize_config = [
             {
                 "name": "task1",
                 "type": "simple",
+                "chain_name": "categorize_helper",
                 "input_template": TRIAGE_PROCESS_A1,
             }
         ]
@@ -63,24 +71,37 @@ class WebUI:
             {
                 "name": "task2",
                 "type": "simple",
+                "chain_name": "urgency_helper",
                 "input_template": TRIAGE_PROCESS_A2,
             }
         ]
-        chain_helper_answer_config = [
-            {
-                "name": "task3",
-                "type": "simple",
-                "input_template": TRIAGE_PROCESS_A3,
-            }
-        ]
         self.translink_helper_categorize_chains = ChainSequence(
-            config=chain_helper_categorize_config, pipeline=self.pipeline, **args
+            config=chain_helper_categorize_config,
+            pipeline=self.pipeline,
+            **categorize_args,
         )
         self.translink_helper_urgency_chains = ChainSequence(
-            config=chain_helper_urgency_config, pipeline=self.pipeline, **args
+            config=chain_helper_urgency_config, pipeline=self.pipeline, **urgency_args
         )
-        self.translink_helper_answer_chains = ChainSequence(
-            config=chain_helper_answer_config, pipeline=self.pipeline, **args
+        # initialize multi step critic agent for qa
+        # testAgent = LlamaModelHandler()
+        # eb = testAgent.get_hf_embedding()
+        # define tool list (excluding any documents)
+        test_tool_list = ["wiki", "searx"]
+        # initiate agent executor
+        answer_kwarg = {
+            "new_session": False,
+            "use_cache_from_log": False,
+            "log_tool_selector": False,
+            "doc_use_type": "aggregate",
+        }
+        self.translink_helper_answer_chains = AgentMultiStepCritic(
+            pipeline=self.pipeline,
+            # embedding=eb,
+            tool_names=test_tool_list,
+            doc_info={},
+            verbose=True,
+            **answer_kwarg,
         )
 
     @staticmethod
@@ -96,7 +117,7 @@ class WebUI:
         annotated_text_1 = self.translink_helper_categorize_chains.run(input_text)
         annotated_text_2 = self.translink_helper_urgency_chains.run(input_text)
         annotated_text_3 = self.translink_helper_answer_chains.run(input_text)
-        final_text = f"""Customer message: {input_text}\nCategory: {annotated_text_1}.\nPriority: {annotated_text_2}.\nSuggested Response: {annotated_text_3}"""
+        final_text = f"""Customer Inquiry: {input_text}\nCategory: {annotated_text_1}.\nPriority: {annotated_text_2}.\nAdditional Information: {annotated_text_3}"""
         return final_text
 
     def respond(self, message, chat_history):
