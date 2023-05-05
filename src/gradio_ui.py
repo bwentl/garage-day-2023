@@ -87,13 +87,14 @@ class WebUI:
         # testAgent = LlamaModelHandler()
         # eb = testAgent.get_hf_embedding()
         # define tool list (excluding any documents)
-        test_tool_list = ["wiki", "google"]
+        # test_tool_list = ["wiki", "searx"]
+        test_tool_list = ["searx"]
         # initiate agent executor
         answer_kwarg = {
             "new_session": False,
             "use_cache_from_log": False,
             "log_tool_selector": False,
-            "generate_search_term": False,
+            "generate_search_term": True,
             "doc_use_type": "aggregate",
         }
         self.translink_helper_answer_chains = AgentMultiStepCritic(
@@ -329,4 +330,11 @@ if __name__ == "__main__":
 
     # test this class
     ui_test = WebUI(test_func)
-    ui_test.launch(server_name="0.0.0.0", server_port=7860)
+    ui_test.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        inbrowser=False,
+        prevent_thread_lock=False,
+        auth=None,
+        share=False,
+    )

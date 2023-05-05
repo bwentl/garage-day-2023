@@ -70,7 +70,7 @@ class AgentMultiStepCritic:
             kwarg["generate_search_term"] if "generate_search_term" in kwarg else True
         )
         self.min_tool_use = kwarg["min_tool_use"] if "min_tool_use" in kwarg else 1
-        self.max_tool_use = kwarg["max_tool_use"] if "max_tool_use" in kwarg else 5
+        self.max_tool_use = kwarg["max_tool_use"] if "max_tool_use" in kwarg else 3
         self.use_cache_from_log = (
             kwarg["use_cache_from_log"] if "use_cache_from_log" in kwarg else False
         )
@@ -272,22 +272,22 @@ class AgentMultiStepCritic:
                 critique_answer = self.pipeline(critique_prompt)
                 critique_answer = critique_answer.content
                 print(critique_answer)
+            # increment tries
+            number_of_tries += 1
             # step 8: decide if final answer is ready
-            if critique_answer.lower() == "yes":
+            if critique_answer.lower() == "yes" or number_of_tries >= self.max_tool_use:
                 enough_info = True
                 final_answer = preliminary_answer
                 memory_thought = agent_logs.read_log()
                 agent_logs.write_log_and_print(f"Final Answer: {preliminary_answer}")
-            else:
-                number_of_tries += 1
 
-        if self.update_long_term_memory:
-            self.memory_setter.add_memory(
-                text=final_answer,
-                prompt=main_prompt,
-                thought=memory_thought,
-                llm=self.pipeline,
-            )
+        # if self.update_long_term_memory:
+        #     self.memory_setter.add_memory(
+        #         text=final_answer,
+        #         prompt=main_prompt,
+        #         thought=memory_thought,
+        #         llm=self.pipeline,
+        #     )
 
         # always cache the current log
         agent_logs.save_cache()
