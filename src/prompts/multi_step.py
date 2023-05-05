@@ -50,7 +50,7 @@ The most relevant search term would be """
 MULTI_STEP_TOOL_GENERATE_PROMPT = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
 ### Instruction:
-Please answer this question using the additional information provided in the input:
+Please summarize the information provided in the input, so it provides the relevant information to answer this question:
 {main_prompt}
 
 ### Input:
