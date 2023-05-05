@@ -44,6 +44,7 @@ class ChainSequence:
             },
         ]
         """
+        self.new_session = kwarg["new_session"] if "new_session" in kwarg else False
         self.use_cache_from_log = (
             kwarg["use_cache_from_log"] if "use_cache_from_log" in kwarg else False
         )
@@ -75,14 +76,14 @@ class ChainSequence:
         task_list = list(self.chains.keys())
         task_list_str = "+".join(task_list)
 
-        # set cache state to save cache logs
-        cached_response = agent_logs.set_cache_lookup(
-            f"Custom Chains - {task_list_str} - {input}"
-        )
-        # if using cache from logs saved, then try to load previous log
-        if cached_response is not None and self.use_cache_from_log:
-            return cached_response
-        elif self.use_cache_from_log is False:
+        if self.new_session:
+            # set cache state to save cache logs
+            cached_response = agent_logs.set_cache_lookup(
+                f"Custom Chains - {task_list_str} - {input}"
+            )
+            # if using cache from logs saved, then try to load previous log
+            if cached_response is not None and self.use_cache_from_log:
+                return cached_response
             agent_logs().clear_log()
 
         print(f"> Initiating {self.chain_name} sequence for {task_list_str}...")
