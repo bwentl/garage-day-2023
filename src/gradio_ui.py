@@ -49,15 +49,15 @@ class WebUI:
             openai_api_version="2023-03-15-preview",
             model_name="gpt-35-turbo",
             temperature=0.1,
-            max_tokens=200,
+            max_tokens=1000,
         )
         categorize_args = {
             "new_session": True,
-            "use_cache_from_log": True,
+            "use_cache_from_log": False,
         }
         urgency_args = {
             "new_session": False,
-            "use_cache_from_log": True,
+            "use_cache_from_log": False,
         }
         chain_helper_categorize_config = [
             {
@@ -93,6 +93,7 @@ class WebUI:
             "new_session": False,
             "use_cache_from_log": False,
             "log_tool_selector": False,
+            "generate_search_term": False,
             "doc_use_type": "aggregate",
         }
         self.translink_helper_answer_chains = AgentMultiStepCritic(
