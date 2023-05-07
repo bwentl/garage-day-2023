@@ -9,7 +9,7 @@ from langchain.chat_models import AzureChatOpenAI
 
 
 sys.path.append("./")
-# from src.models import LlamaModelHandler
+from src.models import LlamaModelHandler
 from src.chain_sequence import ChainSequence
 from src.agent_multi_step_critic import AgentMultiStepCritic
 from src.prompts.customer_triage import (
@@ -41,16 +41,24 @@ class WebUI:
         self.last_customer_query_msg = ""
         self.last_agent_response_msg = ""
         # initialize llm model
-        self.pipeline = AzureChatOpenAI(
-            openai_api_base=get_secrets("azure_openapi_url"),
-            deployment_name=get_secrets("azure_openai_deployment"),
-            openai_api_key=get_secrets("azure_openapi"),
-            openai_api_type="azure",
-            openai_api_version="2023-03-15-preview",
-            model_name="gpt-35-turbo",
-            temperature=0.1,
-            max_tokens=1000,
+        testAgent = LlamaModelHandler()
+        eb = testAgent.load_hf_embedding()
+        model_name = "llama-7b"
+        lora_name = "alpaca-lora-7b"
+        pipeline, model, tokenizer = testAgent.load_llama_llm(
+            model_name=model_name, lora_name=lora_name, max_new_tokens=200
         )
+        self.pipeline = pipeline
+        # self.pipeline = AzureChatOpenAI(
+        #     openai_api_base=get_secrets("azure_openapi_url"),
+        #     deployment_name=get_secrets("azure_openai_deployment"),
+        #     openai_api_key=get_secrets("azure_openapi"),
+        #     openai_api_type="azure",
+        #     openai_api_version="2023-03-15-preview",
+        #     model_name="gpt-35-turbo",
+        #     temperature=0.1,
+        #     max_tokens=1000,
+        # )
         categorize_args = {
             "new_session": True,
             "use_cache_from_log": False,
@@ -99,7 +107,7 @@ class WebUI:
         }
         self.translink_helper_answer_chains = AgentMultiStepCritic(
             pipeline=self.pipeline,
-            # embedding=eb,
+            embedding=eb,
             tool_names=test_tool_list,
             doc_info={},
             verbose=True,

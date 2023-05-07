@@ -14,7 +14,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage
 
 sys.path.append("./")
-from src.gradio_ui import WebUI
+# from src.gradio_ui import WebUI
 from src.models import LlamaModelHandler
 from src.agent_tool_selection import AgentToolSelection
 from src.docs import DocumentHandler
@@ -367,9 +367,9 @@ if __name__ == "__main__":
     # test_prompt = "What did the president say about Ketanji Brown Jackson in his address to the nation?"
     # multi_step_agent.run(test_prompt)
 
-    # test with web ui
-    ui_run = WebUI(multi_step_agent.run)
-    ui_run.launch(server_name="0.0.0.0", server_port=7860)
+    # # test with web ui
+    # ui_run = WebUI(multi_step_agent.run)
+    # ui_run.launch(server_name="0.0.0.0", server_port=7860)
 
     # finish
     print("testing complete")
