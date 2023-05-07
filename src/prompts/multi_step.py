@@ -8,6 +8,9 @@ Here is what you already know: {previous_tool_output}
 
 What would be a good follow up question to help you gather additional information?
 
+You want to maximize the information you get by asking different questions. You have already asked the following questions:
+{previous_follow_up_questions}
+
 ### Input:
 {main_prompt}
 

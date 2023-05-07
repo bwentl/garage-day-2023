@@ -146,14 +146,24 @@ class AgentMultiStepCritic:
         tools_used = list()
         previous_tool_output = ""
         preliminary_answer = ""
+        previous_follow_up_questions = ""
         number_of_tries = 0
         while enough_info == False and number_of_tries < self.max_tool_use:
             # step 1: ask follow up question
-            follow_up_question_prompt = MULTI_STEP_TOOL_FOLLOW_UP_PROMPT.replace(
-                "{main_prompt}", main_prompt
-            ).replace(
-                "{previous_tool_output}",
-                "nothing yet" if previous_tool_output == "" else previous_tool_output,
+            follow_up_question_prompt = (
+                MULTI_STEP_TOOL_FOLLOW_UP_PROMPT.replace("{main_prompt}", main_prompt)
+                .replace(
+                    "{previous_tool_output}",
+                    "nothing yet"
+                    if previous_tool_output == ""
+                    else previous_tool_output,
+                )
+                .replace(
+                    "{previous_follow_up_questions}",
+                    "nothing yet"
+                    if previous_follow_up_questions == ""
+                    else previous_follow_up_questions,
+                )
             )
             print(follow_up_question_prompt)
             follow_up_question_prompt = [
@@ -164,6 +174,9 @@ class AgentMultiStepCritic:
             follow_up_question = re.sub(
                 r'[^\x00-\x7f"]', "", follow_up_question
             ).strip()
+            previous_follow_up_questions = (
+                f"{previous_follow_up_questions}...{follow_up_question}"
+            )
             agent_logs.write_log_and_print(
                 f"Thought: {follow_up_question}"
                 if preliminary_answer == ""
