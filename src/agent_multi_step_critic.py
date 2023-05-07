@@ -10,8 +10,6 @@ from langchain.agents import (
     Tool,
     AgentType,
 )
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage
 
 sys.path.append("./")
 # from src.gradio_ui import WebUI
@@ -164,11 +162,7 @@ class AgentMultiStepCritic:
                 )
             )
             print(follow_up_question_prompt)
-            follow_up_question_prompt = [
-                HumanMessage(content=follow_up_question_prompt)
-            ]
             follow_up_question = self.pipeline(follow_up_question_prompt)
-            follow_up_question = follow_up_question.content
             follow_up_question = re.sub(
                 r'[^\x00-\x7f"]', "", follow_up_question
             ).strip()
@@ -192,19 +186,17 @@ class AgentMultiStepCritic:
                 )
             )
             print(tool_picker_prompt)
-            tool_picker_prompt = [HumanMessage(content=tool_picker_prompt)]
             tool_picked = self.pipeline(tool_picker_prompt)
-            tool_picked = tool_picked.content
             tool_picked = re.sub(r'[^\x00-\x7f"]', "", tool_picked).strip()
+            agent_logs.write_log_and_print(f"Action: {tool_picked}")
             # handling error with picking tool
             tool_bool_processor = [tool_picked.lower() in i.lower() for i in tool_list]
             tool_picked_index = (
                 tool_bool_processor.index(True)
                 if True in tool_bool_processor
-                else (random.randint(1, len(tool_list)) - 1)
+                else random.randint(1, len(tool_list))
             )
             current_tool = tools[tool_picked_index]
-            agent_logs.write_log_and_print(f"Action: {current_tool.name}")
             if current_tool.name not in tools_used:
                 tools_used.append(current_tool.name)
             # step 3: pick an input for the tool
@@ -223,9 +215,7 @@ class AgentMultiStepCritic:
                     .replace("{main_prompt}", main_prompt)
                 )
                 print(tool_user_prompt)
-                tool_user_prompt = [HumanMessage(content=tool_user_prompt)]
                 tool_input = self.pipeline(tool_user_prompt)
-                tool_input = tool_input.content.replace('"', "")
                 # remove quotation mark and non unicode characters
                 tool_input = re.sub(r'[^\x00-\x7f"]', "", tool_input).strip()
                 # stripe any text after period
@@ -248,17 +238,13 @@ class AgentMultiStepCritic:
                 .replace("{main_prompt}", main_prompt)
             )
             print(generation_prompt)
-            generation_prompt = [HumanMessage(content=generation_prompt)]
             preliminary_answer = self.pipeline(generation_prompt)
-            preliminary_answer = preliminary_answer.content
             # step 6: critique the tool output
             evidence_critic_prompt = MULTI_STEP_TOOL_CRITIC_EVIDENCE_PROMPT.replace(
                 "{main_prompt}", main_prompt
             ).replace("{tool_output}", tool_output)
             print(evidence_critic_prompt)
-            evidence_critic_prompt = [HumanMessage(content=evidence_critic_prompt)]
             critic_evidence_output = self.pipeline(evidence_critic_prompt)
-            critic_evidence_output = critic_evidence_output.content
             print(critic_evidence_output)
             # if the tool output is bad, do not include it in the previous tool output
             if critic_evidence_output.lower() == "yes":
@@ -279,9 +265,7 @@ class AgentMultiStepCritic:
                     .replace("{previous_tool_output}", previous_tool_output)
                 )
                 print(critique_prompt)
-                critique_prompt = [HumanMessage(content=critique_prompt)]
                 critique_answer = self.pipeline(critique_prompt)
-                critique_answer = critique_answer.content
                 print(critique_answer)
             # increment tries
             number_of_tries += 1
