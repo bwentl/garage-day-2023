@@ -95,8 +95,23 @@ class WebUI:
         # testAgent = LlamaModelHandler()
         # eb = testAgent.get_hf_embedding()
         # define tool list (excluding any documents)
-        # test_tool_list = ["wiki", "searx"]
-        test_tool_list = ["searx"]
+        test_tool_list = ["wiki", "searx"]
+        test_doc_info = {
+            "translink": {
+                "tool_name": "Translink Reports",
+                "description": "published policy documents on transportation in Metro Vancouver by TransLink.",
+                "files": [
+                    "index-docs/translink/2020-11-12_capstan_open-house_boards.pdf",
+                    "index-docs/translink/2020-11-30_capstan-station_engagement-summary-report-final.pdf",
+                    "index-docs/translink/rail_to_ubc_rapid_transit_study_jan_2019.pdf",
+                    "index-docs/translink/t2050_10yr-priorities.pdf",
+                    "index-docs/translink/TransLink - Transport 2050 Regional Transportation Strategy.pdf",
+                    "index-docs/translink/translink-ubcx-summary-report-oct-2021.pdf",
+                    "index-docs/translink/ubc_line_rapid_transit_study_phase_2_alternatives_evaluation.pdf",
+                    "index-docs/translink/ubc_rapid_transit_study_alternatives_analysis_findings.pdf",
+                ],
+            },
+        }
         # initiate agent executor
         answer_kwarg = {
             "new_session": False,
@@ -109,7 +124,7 @@ class WebUI:
             pipeline=self.pipeline,
             embedding=eb,
             tool_names=test_tool_list,
-            doc_info={},
+            doc_info=test_doc_info,
             verbose=True,
             **answer_kwarg,
         )
