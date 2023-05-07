@@ -9,9 +9,9 @@ from langchain.chains.constitutional_ai.models import ConstitutionalPrinciple
 from langchain.prompts.prompt import PromptTemplate
 
 sys.path.append("./")
-# from src.models import LlamaModelHandler
-# from src.docs import DocumentHandler
-# from src.tools import ToolHandler
+from src.models import LlamaModelHandler
+from src.docs import DocumentHandler
+from src.tools import ToolHandler
 from src.util import get_secrets, get_word_match_list, agent_logs
 from src.prompts.examples import (
     CHAIN_EXAMPLE_A1,
@@ -166,100 +166,100 @@ if __name__ == "__main__":
     model_name = "llama-7b"
     lora_name = "alpaca-lora-7b"
 
-    # testAgent = LlamaModelHandler()
-    # embedding = testAgent.get_hf_embedding()
-    # pipeline, model, tokenizer = testAgent.load_llama_llm(
-    #     model_name=model_name, lora_name=lora_name, max_new_tokens=200
-    # )
+    testAgent = LlamaModelHandler()
+    embedding = testAgent.get_hf_embedding()
+    pipeline, model, tokenizer = testAgent.load_llama_llm(
+        model_name=model_name, lora_name=lora_name, max_new_tokens=200
+    )
 
-    # # test 1
+    # test 1
 
-    # # get search tool
-    # tools_wrapper = ToolHandler()
-    # searx_tool = tools_wrapper.get_tools(["searx"], pipeline)[0]
-    # # get document tool
-    # test_doc_info = {
-    #     "examples": {
-    #         "tool_name": "State of Union Document",
-    #         "description": "President Joe Biden's 2023 state of the union address.",
-    #         "files": ["index-docs/examples/state_of_the_union.txt"],
-    #     },
-    #     "memories": {
-    #         "tool_name": "Conversation History",
-    #         "description": "history of previous conversations by the AI agent.",
-    #         "memory_type": "long_term",
-    #     },
+    # get search tool
+    tools_wrapper = ToolHandler()
+    searx_tool = tools_wrapper.get_tools(["searx"], pipeline)[0]
+    # get document tool
+    test_doc_info = {
+        "examples": {
+            "tool_name": "State of Union Document",
+            "description": "President Joe Biden's 2023 state of the union address.",
+            "files": ["index-docs/examples/state_of_the_union.txt"],
+        },
+        "memories": {
+            "tool_name": "Conversation History",
+            "description": "history of previous conversations by the AI agent.",
+            "memory_type": "long_term",
+        },
+    }
+    # add document retrievers to tools
+    if len(test_doc_info) > 0:
+        newDocs = DocumentHandler(
+            embedding=embedding, redis_host=get_secrets("redis_host")
+        )
+        tools_list = newDocs.get_tool_from_doc(
+            pipeline=pipeline,
+            doc_info=test_doc_info,
+            doc_use_type="aggregate",
+            doc_top_k_results=3,
+        )
+        example_doc_tool = tools_list[0]
+        memory_doc_tool = tools_list[1]
+    # build chain config
+    chain_config = [
+        {
+            "name": "task1",
+            "type": "simple",
+            "input_template": CHAIN_EXAMPLE_B1,
+            "tool": memory_doc_tool,
+            "tool_input": "input",
+        },
+        {
+            "name": "task2",
+            "type": "simple",
+            "input_template": CHAIN_EXAMPLE_B2,
+        },
+        {
+            "name": "task3",
+            "type": "constitutional",
+            "principles": ["ethical"],
+            "input_template": CHAIN_EXAMPLE_B3,
+            "tool": searx_tool,
+            "tool_input": "task2_output",
+        },
+    ]
+
+    # start ui
+    from src.gradio_ui import WebUI
+
+    # run chains
+    custom_chains = ChainSequence(config=chain_config, pipeline=pipeline)
+    # custom_chains.run(input="What happened yesterday? Any big news?")
+
+    ui_run = WebUI(custom_chains.run)
+    ui_run.launch(server_name="0.0.0.0", server_port=7860)
+
+    # # test 2
+    # args = {
+    #     "use_cache_from_log": True,
     # }
-    # # add document retrievers to tools
-    # if len(test_doc_info) > 0:
-    #     newDocs = DocumentHandler(
-    #         embedding=embedding, redis_host=get_secrets("redis_host")
-    #     )
-    #     tools_list = newDocs.get_tool_from_doc(
-    #         pipeline=pipeline,
-    #         doc_info=test_doc_info,
-    #         doc_use_type="aggregate",
-    #         doc_top_k_results=3,
-    #     )
-    #     example_doc_tool = tools_list[0]
-    #     memory_doc_tool = tools_list[1]
-    # # build chain config
     # chain_config = [
     #     {
     #         "name": "task1",
     #         "type": "simple",
-    #         "input_template": CHAIN_EXAMPLE_B1,
-    #         "tool": memory_doc_tool,
-    #         "tool_input": "input",
+    #         "input_template": CHAIN_EXAMPLE_A1,
     #     },
     #     {
     #         "name": "task2",
     #         "type": "simple",
-    #         "input_template": CHAIN_EXAMPLE_B2,
+    #         "input_template": CHAIN_EXAMPLE_A2,
     #     },
     #     {
     #         "name": "task3",
-    #         "type": "constitutional",
-    #         "principles": ["ethical"],
-    #         "input_template": CHAIN_EXAMPLE_B3,
-    #         "tool": searx_tool,
-    #         "tool_input": "task2_output",
+    #         "type": "simple",
+    #         "input_template": CHAIN_EXAMPLE_A3,
     #     },
     # ]
-
-    # # start ui
-    # from src.gradio_ui import WebUI
-
     # # run chains
-    # custom_chains = ChainSequence(config=chain_config, pipeline=pipeline)
-    # # custom_chains.run(input="What happened yesterday? Any big news?")
+    # custom_chains = ChainSequence(config=chain_config, pipeline=pipeline, **args)
+    # # custom_chains.run(input="what did the president say about Ketanji Brown Jackson")
 
-    # ui_run = WebUI(custom_chains.run)
-    # ui_run.launch(server_name="0.0.0.0", server_port=7860)
-
-    # # # test 2
-    # # args = {
-    # #     "use_cache_from_log": True,
-    # # }
-    # # chain_config = [
-    # #     {
-    # #         "name": "task1",
-    # #         "type": "simple",
-    # #         "input_template": CHAIN_EXAMPLE_A1,
-    # #     },
-    # #     {
-    # #         "name": "task2",
-    # #         "type": "simple",
-    # #         "input_template": CHAIN_EXAMPLE_A2,
-    # #     },
-    # #     {
-    # #         "name": "task3",
-    # #         "type": "simple",
-    # #         "input_template": CHAIN_EXAMPLE_A3,
-    # #     },
-    # # ]
-    # # # run chains
-    # # custom_chains = ChainSequence(config=chain_config, pipeline=pipeline, **args)
-    # # # custom_chains.run(input="what did the president say about Ketanji Brown Jackson")
-
-    # print("test done")
+    print("test done")
